@@ -679,3 +679,113 @@ fn pop_if_empty_in_bounds() {
     segments.pop_if_empty();
     segments.pop();
 }
+
+#[test]
+fn test_make_relative() {
+    let tests = [
+        (
+            "http://127.0.0.1:8080/test",
+            "http://127.0.0.1:8080/test",
+            "",
+        ),
+        (
+            "http://127.0.0.1:8080/test",
+            "http://127.0.0.1:8080/test/",
+            "test/",
+        ),
+        (
+            "http://127.0.0.1:8080/test/",
+            "http://127.0.0.1:8080/test",
+            "../test",
+        ),
+        (
+            "http://127.0.0.1:8080/",
+            "http://127.0.0.1:8080/?foo=bar#123",
+            "?foo=bar#123",
+        ),
+        (
+            "http://127.0.0.1:8080/",
+            "http://127.0.0.1:8080/test/video",
+            "test/video",
+        ),
+        (
+            "http://127.0.0.1:8080/test",
+            "http://127.0.0.1:8080/test/video",
+            "test/video",
+        ),
+        (
+            "http://127.0.0.1:8080/test/",
+            "http://127.0.0.1:8080/test/video",
+            "video",
+        ),
+        (
+            "http://127.0.0.1:8080/test",
+            "http://127.0.0.1:8080/test2/video",
+            "test2/video",
+        ),
+        (
+            "http://127.0.0.1:8080/test/",
+            "http://127.0.0.1:8080/test2/video",
+            "../test2/video",
+        ),
+        (
+            "http://127.0.0.1:8080/test/bla",
+            "http://127.0.0.1:8080/test2/video",
+            "../test2/video",
+        ),
+        (
+            "http://127.0.0.1:8080/test/bla/",
+            "http://127.0.0.1:8080/test2/video",
+            "../../test2/video",
+        ),
+        (
+            "http://127.0.0.1:8080/test/?foo=bar#123",
+            "http://127.0.0.1:8080/test/video",
+            "video",
+        ),
+        (
+            "http://127.0.0.1:8080/test/",
+            "http://127.0.0.1:8080/test/video?baz=meh#456",
+            "video?baz=meh#456",
+        ),
+        (
+            "http://127.0.0.1:8080/test",
+            "http://127.0.0.1:8080/test?baz=meh#456",
+            "?baz=meh#456",
+        ),
+        (
+            "http://127.0.0.1:8080/test/",
+            "http://127.0.0.1:8080/test?baz=meh#456",
+            "../test?baz=meh#456",
+        ),
+        (
+            "http://127.0.0.1:8080/test/",
+            "http://127.0.0.1:8080/test/?baz=meh#456",
+            "?baz=meh#456",
+        ),
+        (
+            "http://127.0.0.1:8080/test/?foo=bar#123",
+            "http://127.0.0.1:8080/test/video?baz=meh#456",
+            "video?baz=meh#456",
+        ),
+    ];
+
+    for (base, uri, relative) in &tests {
+        let base_uri = url::Url::parse(base).unwrap();
+        let relative_uri = url::Url::parse(uri).unwrap();
+        let make_relative = base_uri.make_relative(&relative_uri).unwrap();
+        assert_eq!(
+            make_relative, *relative,
+            "base: {}, uri: {}, relative: {}",
+            base, uri, relative
+        );
+        assert_eq!(
+            base_uri.join(&relative).unwrap().as_str(),
+            *uri,
+            "base: {}, uri: {}, relative: {}",
+            base,
+            uri,
+            relative
+        );
+    }
+}
